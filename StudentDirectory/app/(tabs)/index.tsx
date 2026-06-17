@@ -6,25 +6,34 @@ import SearchBar from "@/components/search-bar";
 import StudentDetail from "@/components/student-detail";
 import { useState } from "react";
 
+// NEW: TypeScript type declaration for Section 7 department filters
+type DepartmentFilter = "All" | "Computer Science" | "Software Engineering";
+
 export default function HomeScreen() {
     // State 1: the current search query
     const [query, setQuery] = useState<string>("");
 
-    // NEW: State 2: the currently selected student (null = none selected)
+    // State 2: the currently selected student (null = none selected)
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+
+    // NEW: State 3: the currently active department filter tab
+    const [activeTab, setActiveTab] = useState<DepartmentFilter>("All");
 
     // NEW: Toggle selection: tap same student to select and deselect
     const handleSelect = (student: Student) => {
         setSelectedStudent((prev) => (prev?.id === student.id ? null : student));
     };
 
-    // Derived value: filter students based on query
+    // Derived value: filter students based on query AND department filter tab
     // This is NOT state — it is computed from state every render
     const filtered = STUDENTS.filter((s) => {
-        return (
+        const matchesQuery = 
             s.name.toLowerCase().includes(query.toLowerCase()) || // check if name matches query OR
-            s.department.toLowerCase().includes(query.toLowerCase()) // check if department matches query
-        );
+            s.department.toLowerCase().includes(query.toLowerCase()); // check if department matches query
+            
+        const matchesTab = activeTab === "All" || s.department === activeTab;
+
+        return matchesQuery && matchesTab;
     });
 
     return (
@@ -34,15 +43,37 @@ export default function HomeScreen() {
                 <Text style={styles.title}>Student Directory</Text>
             </View>
 
+            {/* NEW: Horizontal Department Filter Tabs container as hinted in section 7.1 */}
+            <View style={styles.tabContainer}>
+                {(["All", "Computer Science", "Software Engineering"] as DepartmentFilter[]).map((dept) => {
+                    const isActive = activeTab === dept;
+                    return (
+                        <Text
+                            key={dept}
+                            style={[styles.tabButton, isActive && styles.activeTabButton]}
+                            onPress={() => setActiveTab(dept)}
+                        >
+                            {dept}
+                        </Text>
+                    );
+                })}
+            </View>
+
             {/* update the value and onChangeText function in the Search Bar */}
             <SearchBar value={query} onChangeText={setQuery} />
 
             <FlatList
                 data={filtered}
                 keyExtractor={(item) => item.id}
-				// NEW: update the onPress handler to toggle selection and pass isSelected prop to StudentItem
-				// and the isSelected prop is used to conditionally style the selected student item in the list (e.g., highlight it)
-                renderItem={({ item }) => <StudentItem student={item} onPress={handleSelect} isSelected={selectedStudent?.id === item.id} />}
+                // NEW: update the onPress handler to toggle selection and pass isSelected prop to StudentItem
+                // and the isSelected prop is used to conditionally style the selected student item in the list (e.g., highlight it)
+                renderItem={({ item }) => (
+                    <StudentItem 
+                        student={item} 
+                        onPress={handleSelect} 
+                        isSelected={selectedStudent?.id === item.id} 
+                    />
+                )}
                 ListEmptyComponent={
                     <View style={styles.empty}>
                         <Text style={styles.emptyText}>No students match "{query}"</Text>
@@ -77,7 +108,7 @@ const styles = StyleSheet.create({
         left: 0,
         position: "absolute",
     },
-    // NEW: styles for the title bar
+    // styles for the title bar
     titleBar: {
         flexDirection: "row",
         justifyContent: "space-between",
@@ -94,6 +125,29 @@ const styles = StyleSheet.create({
     count: {
         fontSize: 12,
         color: "#CCFBF1",
+    },
+    // NEW: Style layout for Section 7 Horizontal Tabs
+    tabContainer: {
+        flexDirection: "row",
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        backgroundColor: "#0D1F4E",
+        gap: 8,
+    },
+    tabButton: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 16,
+        backgroundColor: "#1E293B",
+        color: "#94A3B8",
+        fontSize: 13,
+        fontWeight: "500",
+        overflow: "hidden",
+    },
+    activeTabButton: {
+        backgroundColor: "#0D9488", // Using the manual's teal theme coloring (#0D9488)
+        color: "#FFFFFF",
+        fontWeight: "700",
     },
     empty: {
         padding: 40,
